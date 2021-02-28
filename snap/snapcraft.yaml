@@ -65,6 +65,9 @@ parts:
     override-build: |
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
       cp -av lora/lora_conf/serial/*.json $SNAPCRAFT_PART_INSTALL/etc/
+      for file in $SNAPCRAFT_PART_INSTALL/etc/*.json; do
+          sed -i 's/"autoquit_threshold":.*$/"autoquit_threshold": 0/' $file
+      done
   helper:
     source: .
     plugin: dump
