@@ -7,6 +7,6 @@ for interface in serial-port spi network-control; do
   fi
 done
 
-if snapctl services ${SNAP_NAME}.daemon | grep -q inactive; then
-  snapctl start --enable ${SNAP_NAME}.daemon 2>&1 || true
+if snapctl services ${SNAP_NAME}.pktfwd | grep -q inactive; then
+  snapctl start --enable ${SNAP_NAME}.pktfwd 2>&1 || true
 fi

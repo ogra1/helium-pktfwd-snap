@@ -20,6 +20,7 @@ apps:
   pktfwd:
     command: bin/start.sh
     daemon: simple
+    restart-condition: always
     plugs:
       - gpio
       - network
