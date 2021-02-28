@@ -1,0 +1,48 @@
+#! /bin/sh
+
+# copy default config to writable place if it does not exist yet
+# note that we default to EU 86x
+if [ ! -e $SNAP_COMMON/global_conf.json ]; then
+  cp $SNAP/etc/global_conf.eu_863_870.json $SNAP_COMMON/global_conf.json
+fi
+
+# only start if all interfaces are connected
+DISABLED=""
+
+disable(){
+  snapctl stop --disable ${SNAP_NAME}.daemon
+}
+
+if ! snapctl is-connected gpio; then
+  logger -t ${SNAP_NAME} "need access to gpio !!!"
+  logger -t ${SNAP_NAME} "please run snap connect ${SNAP_NAME}:gpio pi:bcm-gpio-17"
+  DISABLED="true"
+fi
+
+if ! snapctl is-connected spi; then
+  logger -t ${SNAP_NAME} "need access to spi device !!!"
+  logger -t ${SNAP_NAME} "please run snap connect ${SNAP_NAME}:spi pi:spidev0"
+  DISABLED="true"
+fi
+
+if ! snapctl is-connected serial-port; then
+  logger -t ${SNAP_NAME} "need access to serial port !!!"
+  logger -t ${SNAP_NAME} "please run snap connect ${SNAP_NAME}:serial-port pi:bt-serial"
+  DISABLED="true"
+fi
+
+if ! snapctl is-connected network-control; then
+  logger -t ${SNAP_NAME} "need access to control the network !!!"
+  logger -t ${SNAP_NAME} "please run snap connect ${SNAP_NAME}:network-control"
+  DISABLED="true"
+fi
+
+if [ -n "$DISABLED" ]; then
+  logger -t ${SNAP_NAME} "necessary interfaces not connected, disabling service for the moment"
+  disable
+  exit 0
+fi
+
+if snapctl services ${SNAP_NAME}.daemon | grep -q inactive; then
+  snapctl start --enable ${SNAP_NAME}.daemon 2>&1 || true
+fi

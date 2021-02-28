@@ -1,0 +1,12 @@
+#! /bin/sh
+
+# only start the daemon if all other interfaces are connected too
+for interface in serial-port network-control gpio; do
+  if ! snapctl is-connected $interface; then
+    exit 0
+  fi
+done
+
+if snapctl services ${SNAP_NAME}.daemon | grep -q inactive; then
+  snapctl start --enable ${SNAP_NAME}.daemon 2>&1 || true
+fi

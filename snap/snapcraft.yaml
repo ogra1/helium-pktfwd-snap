@@ -1,0 +1,67 @@
+name: helium-pktfwd
+base: core20
+adopt-info: pktfwd
+summary: Lora network packet forwarder
+description: |
+  The packet forwarder is a program running on the host of a Lora gateway
+  that forwards RF packets receive by the concentrator to a server through
+  a IP/UDP link, and emits RF packets that are sent by the server.
+  It can also emit a network-wide GPS-synchronous beacon signal used for
+  coordinating all nodes of the network.
+
+grade: stable
+confinement: strict
+
+apps:
+  pktfwd:
+    command: bin/start.sh
+    daemon: simple
+    plugs:
+      - gpio
+      - network
+      - network-control
+      - network-bind
+      - serial-port
+      - spi
+
+parts:
+  loragw:
+    source: https://github.com/Lora-net/lora_gateway.git
+    plugin: make
+    override-pull: |
+      snapcraftctl pull
+      sed -i 's/#define SPI_SPEED       8000000/#define SPI_SPEED       2000000/' \
+          $SNAPCRAFT_PART_SRC/libloragw/src/loragw_spi.native.c
+    override-build: |
+      make all
+      cp -av * $SNAPCRAFT_PART_INSTALL/
+    override-prime: |
+      echo "not priming loragw build fragments"
+  pktfwd:
+    source: https://github.com/Lora-net/packet_forwarder.git
+    plugin: make
+    after: [ loragw ]
+    build-environment:
+      - LGW_PATH: "$SNAPCRAFT_STAGE/libloragw"
+    override-build: |
+      make all
+      # install
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      cp -av lora_pkt_fwd/lora_pkt_fwd $SNAPCRAFT_PART_INSTALL/bin/
+      cp -av lora_pkt_fwd/*.sh $SNAPCRAFT_PART_INSTALL/bin/
+      # set version
+      VER="$(cat VERSION)"
+      echo "setting versin to: $VER"
+      snapcraftctl set-version "$VER"
+  rak2245-configs:
+    source: https://github.com/RAKWireless/RAK2245-RAK831-LoRaGateway-RPi-Raspbian-OS.git
+    plugin: nil
+    after: [ loragw ]
+    override-build: |
+      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
+      cp -av lora/lora_conf/serial/*.json $SNAPCRAFT_PART_INSTALL/etc/
+  helper:
+    source: .
+    plugin: dump
+    organize:
+      start.sh: bin/start.sh
