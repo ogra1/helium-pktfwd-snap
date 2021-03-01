@@ -35,8 +35,19 @@ parts:
     plugin: make
     override-pull: |
       snapcraftctl pull
-      sed -i 's/#define SPI_SPEED       8000000/#define SPI_SPEED       2000000/' \
-          $SNAPCRAFT_PART_SRC/libloragw/src/loragw_spi.native.c
+      # get RAK overlays for the 2245
+      git clone https://github.com/RAKWireless/rak_common_for_gateway.git
+      # copy patched bits in place
+      cp rak_common_for_gateway/lora/rak2245/library.cfg libloragw/library.cfg
+      cp rak_common_for_gateway/lora/rak2245/loragw_spi.native.c libloragw/src/loragw_spi.native.c
+      # copy configs so they get staged
+      mkdir -p configs
+      cp rak_common_for_gateway/lora/rak2245/global_conf/*.json configs/
+      # copy patched forwarder
+      mkdir -p pktfwd-override
+      cp rak_common_for_gateway/lora/rak2245/lora_pkt_fwd.c pktfwd-override/
+      # clean up
+      rm -rf rak_common_for_gateway
     override-build: |
       make all
       cp -av * $SNAPCRAFT_PART_INSTALL/
@@ -49,25 +60,20 @@ parts:
     build-environment:
       - LGW_PATH: "$SNAPCRAFT_STAGE/libloragw"
     override-build: |
+      cp -av $SNAPCRAFT_STAGE/pktfwd-override/lora_pkt_fwd.c lora_pkt_fwd/src/
       make all
       # install
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       cp -av lora_pkt_fwd/lora_pkt_fwd $SNAPCRAFT_PART_INSTALL/bin/
       cp -av lora_pkt_fwd/*.sh $SNAPCRAFT_PART_INSTALL/bin/
+      # copy configs
+      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
+      cp -av $SNAPCRAFT_STAGE/configs/*.json $SNAPCRAFT_PART_INSTALL/etc/
+      sed -i 's/"autoquit_threshold":.*$/"autoquit_threshold": 0/' $SNAPCRAFT_STAGE/configs/*.json
       # set version
       VER="$(cat VERSION)"
-      echo "setting versin to: $VER"
+      echo "setting version to: $VER"
       snapcraftctl set-version "$VER"
-  rak2245-configs:
-    source: https://github.com/RAKWireless/RAK2245-RAK831-LoRaGateway-RPi-Raspbian-OS.git
-    plugin: nil
-    after: [ loragw ]
-    override-build: |
-      mkdir -p $SNAPCRAFT_PART_INSTALL/etc
-      cp -av lora/lora_conf/serial/*.json $SNAPCRAFT_PART_INSTALL/etc/
-      for file in $SNAPCRAFT_PART_INSTALL/etc/*.json; do
-          sed -i 's/"autoquit_threshold":.*$/"autoquit_threshold": 0/' $file
-      done
   helper:
     source: .
     plugin: dump

@@ -25,7 +25,7 @@ if [ ! -e "local_conf.json" ]; then
   GW_ID="$(ip link show ${DEV} | awk '/ether/ {print $2}' | \
 	  awk -F\: '{print $1$2$3"FFFE"$4$5$6}' | \
 	  tr '[:lower:]' '[:upper:]')"
-  /usr/bin/echo -e "{\n\t\"gateway_conf\": {\n\t\t\"gateway_ID\": \"$GW_ID\",\n\t\t\"server_address\": \"localhost\",\n\t\t\"serv_port_up\": 1680,\n\t\t\"serv_port_down\": 1680\n\t}\n}" >local_conf.json
+  /usr/bin/echo -e "{\n\t\"gateway_conf\": {\n\t\t\"gateway_ID\": \"$GW_ID\",\n\t\t\"server_address\": \"127.0.0.1\",\n\t\t\"serv_port_up\": 1680,\n\t\t\"serv_port_down\": 1680\n\t}\n}" >local_conf.json
 fi
 
 $SNAP/bin/lora_pkt_fwd
