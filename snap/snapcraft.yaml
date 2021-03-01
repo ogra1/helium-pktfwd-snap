@@ -69,7 +69,7 @@ parts:
       # copy configs
       mkdir -p $SNAPCRAFT_PART_INSTALL/etc
       cp -av $SNAPCRAFT_STAGE/configs/*.json $SNAPCRAFT_PART_INSTALL/etc/
-      sed -i 's/"autoquit_threshold":.*$/"autoquit_threshold": 0/' $SNAPCRAFT_STAGE/configs/*.json
+      sed -i 's/"autoquit_threshold":.*$/"autoquit_threshold": 0/' $SNAPCRAFT_PART_INSTALL/etc/*.json
       # set version
       VER="$(cat VERSION)"
       echo "setting version to: $VER"
